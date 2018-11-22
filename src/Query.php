@@ -102,8 +102,6 @@ class Query implements \IteratorAggregate
     /**
      * The method checks for the presence of the required criterion inside the query.
      *
-     * TODO Add callable argument support (like filter).
-     *
      * @param string|callable|object $criterion
      * @return bool
      */
@@ -365,7 +363,7 @@ class Query implements \IteratorAggregate
     }
 
     /**
-     * @param string|\Closure $filter
+     * @param string|callable $filter
      * @return Query
      */
     public function except($filter): Query
@@ -382,39 +380,39 @@ class Query implements \IteratorAggregate
     }
 
     /**
-     * @param string|\Closure $filter
+     * @param string|callable $filter
      * @return Query
      */
     public function only($filter): Query
     {
         $filter = $this->createFilter($filter);
-        $copy = $this->clone();
-        $criteria = [];
+        $copy = $this->create();
 
-        foreach ($copy->getCriteria() as $criterion) {
+        foreach ($this->getCriteria() as $criterion) {
             if ($filter($criterion)) {
-                $criteria[] = $criterion;
+                $cloneCriterion = clone $criterion;
+                $cloneCriterion->detach();
+                $copy->add($cloneCriterion);
             }
         }
-
-        $copy->criteria = $criteria;
 
         return $copy;
     }
 
     /**
-     * @param string|callable $filter
+     * @param string|callable|object $filter
      * @return callable
      */
     private function createFilter($filter): callable
     {
         \assert(\is_string($filter) || \is_callable($filter) || \is_object($filter));
 
-        if (\is_object($filter)) {
-            return function (CriterionInterface $criterion) use ($filter): bool {
-                return $criterion === $filter;
-            };
+        if (\is_object($filter) && ! \is_callable($filter)) {
+            $instance = $filter;
 
+            return function (CriterionInterface $criterion) use ($instance): bool {
+                return $criterion === $instance;
+            };
         } elseif (\is_string($filter) && ! \is_callable($filter)) {
             $typeOf = $filter;
 
