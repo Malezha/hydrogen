@@ -23,6 +23,11 @@ interface CriterionInterface
     public function attach(Query $query): CriterionInterface;
 
     /**
+     * @return bool
+     */
+    public function detach(): bool;
+
+    /**
      * @param Query $query
      * @return bool
      */

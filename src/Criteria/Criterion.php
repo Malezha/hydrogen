@@ -52,6 +52,16 @@ abstract class Criterion implements CriterionInterface
     }
 
     /**
+     * @return bool
+     */
+    public function detach(): bool
+    {
+        $this->query = null;
+
+        return true;
+    }
+
+    /**
      * @param Query $query
      * @return bool
      */
@@ -73,6 +83,10 @@ abstract class Criterion implements CriterionInterface
      */
     public function getQuery(): Query
     {
+        if (!$this->isAttached()) {
+            throw new \LogicException('Criterion was not attached to any Query.');
+        }
+
         return $this->query;
     }
 

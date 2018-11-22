@@ -104,13 +104,15 @@ class Query implements \IteratorAggregate
      *
      * TODO Add callable argument support (like filter).
      *
-     * @param string $criterion
+     * @param string|callable|object $criterion
      * @return bool
      */
-    public function has(string $criterion): bool
+    public function has($criterion): bool
     {
+        $filter = $this->createFilter($criterion);
+
         foreach ($this->criteria as $haystack) {
-            if (\get_class($haystack) === $criterion) {
+            if ($filter($haystack)) {
                 return true;
             }
         }
@@ -266,6 +268,22 @@ class Query implements \IteratorAggregate
     }
 
     /**
+     * @param CriterionInterface $criterion
+     * @return Query
+     */
+    public function remove(CriterionInterface $criterion): self
+    {
+        if ($criterion->isAttachedTo($this) &&
+            false !== ($key = array_search($criterion, $this->criteria))
+        ) {
+            $criterion->detach();
+            unset($this->criteria[$key]);
+        }
+
+        return $this;
+    }
+
+    /**
      * @return Query
      */
     public function clone(): Query
@@ -390,9 +408,14 @@ class Query implements \IteratorAggregate
      */
     private function createFilter($filter): callable
     {
-        \assert(\is_string($filter) || \is_callable($filter));
+        \assert(\is_string($filter) || \is_callable($filter) || \is_object($filter));
 
-        if (\is_string($filter) && ! \is_callable($filter)) {
+        if (\is_object($filter)) {
+            return function (CriterionInterface $criterion) use ($filter): bool {
+                return $criterion === $filter;
+            };
+
+        } elseif (\is_string($filter) && ! \is_callable($filter)) {
             $typeOf = $filter;
 
             return function (CriterionInterface $criterion) use ($typeOf): bool {

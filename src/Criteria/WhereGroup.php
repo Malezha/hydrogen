@@ -53,7 +53,7 @@ class WhereGroup extends Criterion
      */
     public function getQuery(): Query
     {
-        $query = $this->query->create()
+        $query = parent::getQuery()->create()
             ->withAlias($this->query->getAlias());
 
         ($this->then)($query);
